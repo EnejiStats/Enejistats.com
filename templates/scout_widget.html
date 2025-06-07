@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scout Match Data Entry</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f2f4f8; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .stat-list-item { border: 1px solid #ddd; padding: 10px 15px; margin-bottom: 8px; border-radius: 6px; background-color: #fff; display: flex; justify-content: space-between; align-items: center; }
+    .stat-controls { display: flex; align-items: center; gap: 8px; }
+    .stat-controls .btn { font-size: 2rem; width: 3rem; height: 3rem; padding: 0; }
+    .player-section { margin-top: 10px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; background-color: #fff; }
+    .tab-content { margin-top: 20px; }
+    #timerControls { margin: 20px 0; text-align: center; }
+    #matchTimer { font-size: 1.5rem; font-weight: bold; margin-top: 10px; }
+    #status-indicator { position: fixed; top: 10px; right: 10px; padding: 6px 12px; border-radius: 4px; font-weight: bold; color: #fff; z-index: 1000; }
+    .online { background-color: #28a745; }
+    .offline { background-color: #dc3545; }
+    .nav-tabs .nav-item { margin-right: 10px; }
+    @media (max-width: 768px) {
+      .nav-tabs .nav-link { font-size: 0.9rem; padding: 6px; }
+      .stat-controls .btn { font-size: 1.5rem; width: 2.5rem; height: 2.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <div id="status-indicator" class="offline">Offline</div>
+  <div class="container-fluid mt-4 px-3">
+    <h4 class="text-center mb-4">Scout Match Data Entry</h4>
+    <div id="timerControls">
+      <div class="mb-2">
+        <button class="btn btn-primary" onclick="startFirstHalf()">Start First Half</button>
+        <button class="btn btn-secondary" onclick="startSecondHalf()">Start Second Half</button>
+      </div>
+      <div class="mb-2 d-flex justify-content-center align-items-center flex-wrap gap-2">
+        <label for="extraTimeInput" class="form-label m-0">Extra Time (min):</label>
+        <input type="number" id="extraTimeInput" class="form-control w-auto" min="0" placeholder="e.g. 2">
+        <button class="btn btn-outline-primary" onclick="addExtraTime()">Apply</button>
+      </div>
+      <div id="matchTimer">Time: 00:00</div>
+    </div>
+    <ul class="nav nav-tabs justify-content-center flex-wrap" id="playerTab" role="tablist">
+      <li class="nav-item" role="presentation"><button class="nav-link active" id="player1-tab" data-bs-toggle="tab" data-bs-target="#player1" type="button" role="tab">Player 1</button></li>
+      <li class="nav-item" role="presentation"><button class="nav-link" id="player2-tab" data-bs-toggle="tab" data-bs-target="#player2" type="button" role="tab">Player 2</button></li>
+      <li class="nav-item" role="presentation"><button class="nav-link" id="player3-tab" data-bs-toggle="tab" data-bs-target="#player3" type="button" role="tab">Player 3</button></li>
+    </ul>
+    <div class="tab-content swipe-container" id="playerTabContent">
+      <div class="tab-pane fade show active" id="player1" role="tabpanel">
+        <label for="player1Select" class="form-label">Select Player 1</label>
+        <select class="form-select" id="player1Select"></select>
+        <div id="player1Stats" class="player-section"></div>
+      </div>
+      <div class="tab-pane fade" id="player2" role="tabpanel">
+        <label for="player2Select" class="form-label">Select Player 2</label>
+        <select class="form-select" id="player2Select"></select>
+        <div id="player2Stats" class="player-section"></div>
+      </div>
+      <div class="tab-pane fade" id="player3" role="tabpanel">
+        <label for="player3Select" class="form-label">Select Player 3</label>
+        <select class="form-select" id="player3Select"></select>
+        <div id="player3Stats" class="player-section"></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    let timerInterval;
+    let currentTime = 0;
+    function updateTimerDisplay() {
+      const minutes = Math.floor(currentTime / 60);
+      const seconds = currentTime % 60;
+      document.getElementById('matchTimer').textContent = `Time: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+    function startFirstHalf() {
+      stopTimer(); currentTime = 0;
+      timerInterval = setInterval(() => { currentTime++; updateTimerDisplay(); }, 1000);
+    }
+    function startSecondHalf() {
+      stopTimer(); currentTime = 45 * 60;
+      timerInterval = setInterval(() => { currentTime++; updateTimerDisplay(); }, 1000);
+    }
+    function stopTimer() { if (timerInterval) clearInterval(timerInterval); }
+    function addExtraTime() {
+      const extraMins = parseInt(document.getElementById('extraTimeInput').value);
+      if (!isNaN(extraMins) && extraMins > 0) {
+        currentTime += extraMins * 60; updateTimerDisplay();
+        alert(`${extraMins} minute(s) of extra time added.`);
+      }
+    }
+    function updateStatus(isOnline) {
+      const el = document.getElementById('status-indicator');
+      el.textContent = isOnline ? 'Online' : 'Offline';
+      el.className = isOnline ? 'online' : 'offline';
+    }
+    window.addEventListener('load', () => {
+      updateTimerDisplay(); updateStatus(navigator.onLine);
+    });
+    window.addEventListener('online', () => updateStatus(true));
+    window.addEventListener('offline', () => updateStatus(false));
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
