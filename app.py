@@ -20,10 +20,10 @@ def create_app():
         return User.query.get(int(user_id))
 
     @app.route('/')
-def index():
+    def index():
     if current_user.is_authenticated:
         return render_template('dashboard.html')
-    return render_template('landing.html')
+        return render_template('landing.html')
 
     @app.route('/login', methods=['GET', 'POST'])
     def login():
