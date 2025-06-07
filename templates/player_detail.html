@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}{{ player.first_name }} {{ player.last_name }}{% endblock %}
+{% block content %}
+<h2>{{ player.first_name }} {{ player.last_name }}</h2>
+<div class="row">
+  <div class="col-md-4">
+    <img src="{{ player.photo_url or 'https://placehold.co/200' }}" class="img-thumbnail" alt="photo">
+    <ul class="list-group list-group-flush mt-3">
+      <li class="list-group-item"><strong>Nationality:</strong> {{ player.nationality }}</li>
+      <li class="list-group-item"><strong>Date of Birth:</strong> {{ player.dob }}</li>
+      <li class="list-group-item"><strong>Height:</strong> {{ player.height_cm }} cm</li>
+      <li class="list-group-item"><strong>Weight:</strong> {{ player.weight_kg }} kg</li>
+    </ul>
+  </div>
+  <div class="col-md-8">
+    <h4>Season Averages</h4>
+    {% if summary %}
+    <table class="table table-bordered">
+      <tr><th>Minutes</th><td>{{ summary.minutes or 0 }}</td></tr>
+      <tr><th>Successful Passes</th><td>{{ summary.avg_pass_succ | round(1) }}</td></tr>
+    </table>
+    {% else %}
+      <p>No summary available.</p>
+    {% endif %}
+    <h4 class="mt-4">Match-by-Match</h4>
+    {% if player.stats %}
+    <table class="table table-sm table-hover">
+      <thead>
+        <tr><th>Date</th><th>Opponent</th><th>Minutes</th><th>Passes (S/L)</th><th>Dribbles</th><th>Shots</th></tr>
+      </thead>
+      <tbody>
+      {% for stat in player.stats %}
+        <tr>
+          <td>{{ stat.match.date.strftime('%Y-%m-%d') }}</td>
+          <td>{% if stat.match.home_team == player.club.name %}vs {{ stat.match.away_team }}{% else %}vs {{ stat.match.home_team }}{% endif %}</td>
+          <td>{{ stat.minutes }}</td>
+          <td>{{ stat.short_pass_succ + stat.long_pass_succ }}/{{ stat.short_pass_fail + stat.long_pass_fail }}</td>
+          <td>{{ stat.dribbles_succ }}/{{ stat.dribbles_fail }}</td>
+          <td>{{ stat.shots_on }}/{{ stat.shots_off }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <p>No match data available.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
