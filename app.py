@@ -1,10 +1,8 @@
 from flask import Flask, render_template, redirect, url_for, request, flash, jsonify
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from models import db, User, Club, PlayerProfile, PlayerMatchStat, Match,
-    ScoutProfile, PlayerClubHistory, ScoutingReport, RoleEnum
-from forms import LoginForm, PlayerRegistrationForm, ClubRegistrationForm, ScoutRegistrationForm,
-    ScoutingReportForm, PlayerClubHistoryForm
+from models import db, User, Club, PlayerProfile, PlayerMatchStat, Match, ScoutProfile, PlayerClubHistory, ScoutingReport, RoleEnum
+from forms import LoginForm, PlayerRegistrationForm, ClubRegistrationForm, ScoutRegistrationForm, ScoutingReportForm, PlayerClubHistoryForm
 from datetime import datetime
 import os
 
