@@ -2,32 +2,38 @@
 {% block title %}Players{% endblock %}
 {% block content %}
 <h2>Players</h2>
-<form class="row row-cols-lg-auto g-3 align-items-center mb-3" method="get">
-  <div class="col-12">
-    <input type="search" name="q" class="form-control" placeholder="Search" value="{{ request.args.q }}">
+
+<form class="row row-cols-1 row-cols-md-auto g-3 align-items-center mb-3" method="get">
+  <div class="col-12 col-md-4">
+    <input type="search" name="q" class="form-control w-100" placeholder="Search" value="{{ request.args.q }}">
   </div>
-  <div class="col-12">
-    <input type="text" name="nationality" class="form-control" placeholder="Nationality" value="{{ request.args.nationality }}">
+  <div class="col-12 col-md-4">
+    <input type="text" name="nationality" class="form-control w-100" placeholder="Nationality" value="{{ request.args.nationality }}">
   </div>
-  <div class="col-12">
-    <button class="btn btn-primary" type="submit">Filter</button>
+  <div class="col-12 col-md-auto">
+    <button class="btn btn-primary w-100" type="submit">Filter</button>
   </div>
 </form>
+
 {% if players %}
-<table class="table table-striped">
-  <thead>
-    <tr><th>Name</th><th>Nationality</th><th>Actions</th></tr>
-  </thead>
-  <tbody>
-    {% for p in players %}
-    <tr>
-      <td>{{ p.first_name }} {{ p.last_name }}</td>
-      <td>{{ p.nationality }}</td>
-      <td><a class="btn btn-sm btn-outline-primary" href="/players/{{ p.id }}">View</a></td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="table-responsive">
+  <table class="table table-striped">
+    <thead>
+      <tr><th>Name</th><th>Nationality</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+      {% for p in players %}
+      <tr>
+        <td>{{ p.first_name }} {{ p.last_name }}</td>
+        <td>{{ p.nationality }}</td>
+        <td>
+          <a class="btn btn-sm btn-outline-primary" href="/players/{{ p.id }}">View</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% else %}
 <p>No players found.</p>
 {% endif %}
