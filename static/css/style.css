@@ -1,0 +1,9 @@
+body {
+  background-color: #f5f5f5;
+}
+.table th, .table td {
+  vertical-align: middle;
+}
+.alert {
+  margin-top: 1rem;
+}
