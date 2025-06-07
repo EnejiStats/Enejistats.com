@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Home - Soccer Stats{% endblock %}
+{% block content %}
+<div class="row" role="main">
+  <div class="col-lg-8">
+    <div class="card p-3 mb-4">
+      <h2>About Us</h2>
+      <p>We collect high-resolution statistics from grassroots to professional football to help scouts, clubs, and fans make evidence-based decisions.</p>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <h2>Statistics</h2>
+    <div class="list-group">
+      <a href="{{ url_for('players') }}" class="list-group-item list-group-item-action">Player Statistics</a>
+      <!-- Placeholder for future Team Statistics -->
+    </div>
+  </div>
+</div>
+{% endblock %}
