@@ -21,9 +21,9 @@ def create_app():
 
     @app.route('/')
     def index():
-    if current_user.is_authenticated:
-        return render_template('dashboard.html')
-    return render_template('landing.html')
+        if current_user.is_authenticated:
+            return render_template('dashboard.html')
+        return render_template('landing.html')
 
     @app.route('/login', methods=['GET', 'POST'])
     def login():
