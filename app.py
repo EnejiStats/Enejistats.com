@@ -1,3 +1,4 @@
+
 from flask import Flask, render_template, redirect, url_for, request, flash, jsonify
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -159,8 +160,12 @@ def create_app():
 
     return app
 
+# Create the app instance that Gunicorn will use
+app = create_app()
+
+# Initialize the database when the app starts
+with app.app_context():
+    db.create_all()
+
 if __name__ == '__main__':
-    app = create_app()
-    with app.app_context():
-        db.create_all()
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
