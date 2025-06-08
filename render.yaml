@@ -9,5 +9,4 @@ services:
       - key: FLASK_ENV
         value: production
       - key: SECRET_KEY
-        value: =^*+e6%eh@kj4z(t_!%q(2n@-$%m7v7fy9+wnh!)y5^2%g8bw-
- 
+        value: your-secret-key-here
