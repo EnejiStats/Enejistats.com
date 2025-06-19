@@ -32,13 +32,13 @@ uploads_dir = Path("static/uploads")
 uploads_dir.mkdir(parents=True, exist_ok=True)
 
 # JWT Configuration
-SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-key")
+SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 # MongoDB setup with fallback to JSON
 MONGO_URI = os.getenv("MONGO_URI")
-if MONGO_URI:
+if MONGO_URI and SECRET_KEY:
     try:
         client = MongoClient(MONGO_URI)
         db = client["enejistats"]
@@ -56,7 +56,7 @@ else:
     db = None
     players_collection = None
     contact_collection = None
-    print("Warning: MONGO_URI not set. Using JSON file storage.")
+    print("Warning: MONGO_URI or SECRET_KEY not set. Using JSON file storage.")
 
 # Pydantic Models
 class Player(BaseModel):
@@ -307,7 +307,8 @@ async def submit_contact(
     contact_data = {
         "name": name,
         "email": email,
-        "message": message
+        "message": message,
+        "created_at": datetime.utcnow()
     }
     
     if contact_collection:
@@ -327,6 +328,7 @@ async def register_user(
     lastName: Optional[str] = Form(None),
     email: Optional[str] = Form(None),
     password: Optional[str] = Form(None),
+    confirmPassword: Optional[str] = Form(None),
     dob: Optional[str] = Form(None),
     gender: Optional[str] = Form(None),
     playerNationality: Optional[str] = Form(None),
@@ -340,7 +342,8 @@ async def register_user(
     league: Optional[str] = Form(None),
     leagueClub: Optional[str] = Form(None),
     generalClub: Optional[str] = Form(None),
-    clubAssociation: Optional[str] = Form(None),
+    customClub: Optional[str] = Form(None),
+    # Legacy API fields for backward compatibility
     club: Optional[str] = Form(None),
     player_id: Optional[str] = Form(None),
     first_name: Optional[str] = Form(None),
@@ -354,22 +357,23 @@ async def register_user(
     """Handle both web form registration and API registration"""
     
     try:
-        # Check if this is an API call
+        # Check if this is an API call (legacy support)
         is_api_call = bool(player_id and first_name and last_name)
         
         if is_api_call:
             # Handle API registration
             new_player = {
                 "player_id": player_id,
-                "first_name": first_name,
-                "middle_name": middle_name or "",
-                "last_name": last_name,
+                "firstName": first_name,
+                "middleName": middle_name or "",
+                "lastName": last_name,
                 "dob": dob,
                 "nationality": nationality,
-                "preferred_position_category": preferred_position_category,
-                "preferred_position": preferred_position,
+                "preferredPositionCategory": preferred_position_category,
+                "preferredPosition": preferred_position,
                 "club": club,
-                "photo_url": photo_url
+                "photo": photo_url,
+                "created_at": datetime.utcnow()
             }
             
             try:
@@ -399,12 +403,29 @@ async def register_user(
         
         if userType == "player":
             # Validate required fields
+            if not firstName or not lastName or not email or not password:
+                return templates.TemplateResponse("register.html", {
+                    "request": request,
+                    "error": "First name, last name, email, and password are required"
+                })
+            
+            # Validate password confirmation
+            if password != confirmPassword:
+                return templates.TemplateResponse("register.html", {
+                    "request": request,
+                    "error": "Passwords do not match"
+                })
+            
+            # Check age requirement based on league
+            age_required_leagues = ["npfl", "nnl1", "academy"]
+            if league in age_required_leagues and not dob:
+                return templates.TemplateResponse("register.html", {
+                    "request": request,
+                    "error": "Date of birth is required for this league"
+                })
+            
+            # Validate other required fields
             required_fields = {
-                "firstName": firstName,
-                "lastName": lastName,
-                "email": email,
-                "password": password,
-                "dob": dob,
                 "gender": gender,
                 "playerNationality": playerNationality,
                 "preferredPositionCategory": preferredPositionCategory,
@@ -412,8 +433,7 @@ async def register_user(
                 "dominantFoot": dominantFoot,
                 "height": height,
                 "weight": weight,
-                "league": league,
-                "clubAssociation": clubAssociation
+                "league": league
             }
             
             missing_fields = [field for field, value in required_fields.items() if not value]
@@ -432,19 +452,38 @@ async def register_user(
                         "error": "Email already registered"
                     })
             
+            # Check for duplicate user by name and email
+            if players_collection:
+                duplicate_user = players_collection.find_one({
+                    "$or": [
+                        {"email": email},
+                        {"$and": [{"firstName": firstName}, {"lastName": lastName}]}
+                    ]
+                })
+                if duplicate_user:
+                    return templates.TemplateResponse("register.html", {
+                        "request": request,
+                        "error": "User with these credentials already exists"
+                    })
+            
             # Handle photo upload
             photo_filename = None
             if playerPhoto and playerPhoto.filename:
                 try:
                     content = await playerPhoto.read()
-                    if len(content) > 20 * 1024:  # 20KB limit
+                    if len(content) > 200 * 1024:  # 200KB limit
                         return templates.TemplateResponse("register.html", {
                             "request": request,
-                            "error": "Photo size must be 20KB or less"
+                            "error": "Photo size must be 200KB or less"
                         })
                     
-                    photo_filename = f"{firstName.lower()}_{lastName.lower()}.jpg"
+                    # Create unique filename
+                    import time
+                    timestamp = int(time.time())
+                    file_extension = playerPhoto.filename.split('.')[-1] if '.' in playerPhoto.filename else 'jpg'
+                    photo_filename = f"{firstName.lower()}_{lastName.lower()}_{timestamp}.{file_extension}"
                     file_path = uploads_dir / photo_filename
+                    
                     with open(file_path, "wb") as buffer:
                         buffer.write(content)
                 except Exception as e:
@@ -464,14 +503,21 @@ async def register_user(
                     "error": "Password processing failed"
                 })
             
-            # Determine selected club
-            selected_club = leagueClub or generalClub or club
+            # Determine selected club based on league type
+            selected_club = None
+            if league in ["npfl", "nnl1", "nnl2", "academy"]:
+                selected_club = leagueClub
+            elif league in ["street", "university"]:
+                if generalClub == "not-available":
+                    selected_club = customClub
+                else:
+                    selected_club = generalClub
             
-            # Prepare registration data
+            # Prepare registration data for MongoDB
             registration_data = {
                 "userType": userType,
                 "firstName": firstName,
-                "middleName": middleName,
+                "middleName": middleName or "",
                 "lastName": lastName,
                 "email": email,
                 "password": hashed_password,
@@ -487,20 +533,25 @@ async def register_user(
                 "weight": weight,
                 "league": league,
                 "club": selected_club,
-                "clubAssociation": clubAssociation
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow()
             }
             
             # Save to database
             try:
                 if players_collection:
-                    clean_data = {k: v for k, v in registration_data.items() if v is not None and k != 'userType'}
-                    players_collection.insert_one(clean_data)
+                    # Remove None values and userType before saving to MongoDB
+                    clean_data = {k: v for k, v in registration_data.items() if v is not None}
+                    result = players_collection.insert_one(clean_data)
+                    print(f"Player registered successfully with ID: {result.inserted_id}")
                 else:
                     save_to_json(registration_data)
+                    print("Player registered successfully to JSON file")
                 
                 return RedirectResponse(url="/success", status_code=303)
             except Exception as e:
                 print(f"Database save error: {e}")
+                # Try JSON fallback
                 try:
                     save_to_json(registration_data)
                     return RedirectResponse(url="/success", status_code=303)
@@ -532,3 +583,4 @@ async def validate(player: Player):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=5000)
+    
