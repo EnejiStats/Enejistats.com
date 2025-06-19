@@ -15,6 +15,13 @@
     h2 { text-align: center; color: #004aad; }
     form { display: flex; flex-direction: column; }
     label { margin-top: 1rem; font-weight: bold; }
+    
+    .input-group {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    
     input, select {
       padding: 0.6rem;
       border-radius: 5px;
@@ -22,6 +29,50 @@
       margin-top: 0.3rem;
       width: 100%;
     }
+    
+    .password-toggle {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: #666;
+      font-size: 1.2rem;
+      z-index: 1;
+    }
+    
+    .validation-indicator {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1.2rem;
+      z-index: 1;
+    }
+    
+    .validation-indicator.success {
+      color: #28a745;
+    }
+    
+    .validation-indicator.error {
+      color: #dc3545;
+    }
+    
+    .photo-preview {
+      margin-top: 0.5rem;
+      max-width: 200px;
+      max-height: 200px;
+      border: 2px solid #ddd;
+      border-radius: 5px;
+      display: none;
+    }
+    
+    .photo-container {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
     fieldset {
       border: 1px solid #ddd;
       padding: 1rem;
@@ -214,13 +265,12 @@
 <main>
   <h2>User Registration</h2>
   <div id="messageArea">
-    {% if message %}
-      <div class="error-message">{{ message }}</div>
-    {% endif %}
-    {% if success %}
-      <div class="success-message">Registration successful!</div>
-    {% endif %}
-  </div>
+  {% if error %}
+    <div class="error-message">{{ error }}</div>
+  {% elif success %}
+    <div class="success-message">{{ success }}</div>
+  {% endif %}
+</div>
   <form id="registrationForm" action="/register" method="post" enctype="multipart/form-data">
     <label for="userType">User Type</label>
     <select id="userType" name="userType" onchange="displayFields()" required>
@@ -235,53 +285,96 @@
       <legend>Player Details</legend>
       
       <label for="firstName">First Name</label>
-      <input type="text" id="firstName" name="firstName" />
+      <div class="input-group">
+        <input type="text" id="firstName" name="firstName" onblur="validateField('firstName')" />
+        <span class="validation-indicator" id="firstName-indicator"></span>
+      </div>
       
       <label for="middleName">Middle Name (Optional)</label>
-      <input type="text" id="middleName" name="middleName" />
+      <div class="input-group">
+        <input type="text" id="middleName" name="middleName" />
+      </div>
       
       <label for="lastName">Last Name</label>
-      <input type="text" id="lastName" name="lastName" />
+      <div class="input-group">
+        <input type="text" id="lastName" name="lastName" onblur="validateField('lastName')" />
+        <span class="validation-indicator" id="lastName-indicator"></span>
+      </div>
       
       <label for="email">Email Address</label>
-      <input type="email" id="email" name="email" />
+      <div class="input-group">
+        <input type="email" id="email" name="email" onblur="validateField('email')" />
+        <span class="validation-indicator" id="email-indicator"></span>
+      </div>
 
       <label for="password">Password</label>
-      <input type="password" id="password" name="password" />
+      <div class="input-group">
+        <input type="password" id="password" name="password" onblur="validateField('password')" />
+        <span class="password-toggle" onclick="togglePassword('password')">👁️</span>
+      </div>
       
-      <label for="dob">Date of Birth</label>
-      <input type="date" id="dob" name="dob" />
+      <label for="confirmPassword">Confirm Password</label>
+      <div class="input-group">
+        <input type="password" id="confirmPassword" name="confirmPassword" onblur="validateField('confirmPassword')" />
+        <span class="validation-indicator" id="confirmPassword-indicator"></span>
+      </div>
+      
+      <div id="dobField">
+        <label for="dob">Date of Birth</label>
+        <div class="input-group">
+          <input type="date" id="dob" name="dob" onblur="validateField('dob')" />
+          <span class="validation-indicator" id="dob-indicator"></span>
+        </div>
+      </div>
       
       <label for="gender">Gender</label>
-      <select id="gender" name="gender">
-        <option value="">Select</option>
-        <option value="male">Male</option>
-        <option value="female">Female</option>
-        <option value="other">Other</option>
-      </select>
+      <div class="input-group">
+        <select id="gender" name="gender" onchange="validateField('gender')">
+          <option value="">Select</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+          <option value="other">Other</option>
+        </select>
+        <span class="validation-indicator" id="gender-indicator"></span>
+      </div>
       
       <label for="playerNationality">Nationality</label>
-      <select id="playerNationality" name="playerNationality">
-        <option value="">Select Country</option>
-      </select>
+      <div class="input-group">
+        <select id="playerNationality" name="playerNationality" onchange="validateField('playerNationality')">
+          <option value="">Select Country</option>
+        </select>
+        <span class="validation-indicator" id="playerNationality-indicator"></span>
+      </div>
       
-      <label for="playerPhoto">Passport Photo (Max 20KB)</label>
-      <input type="file" id="playerPhoto" name="playerPhoto" accept="image/*" />
+      <div class="photo-container">
+        <label for="playerPhoto">Passport Photo (Max 200KB)</label>
+        <div class="input-group">
+          <input type="file" id="playerPhoto" name="playerPhoto" accept="image/*" onchange="validatePhoto()" />
+          <span class="validation-indicator" id="playerPhoto-indicator"></span>
+        </div>
+        <img id="photoPreview" class="photo-preview" alt="Photo Preview" />
+      </div>
       
       <label for="preferredPositionCategory">Preferred Position</label>
-      <select id="preferredPositionCategory" name="preferredPositionCategory" onchange="showPreferredPositions()">
-        <option value="">Select Position Category</option>
-        <option value="goalkeeper">Goalkeeper</option>
-        <option value="defender">Defender</option>
-        <option value="midfielder">Midfielder</option>
-        <option value="attacker">Attacker</option>
-      </select>
+      <div class="input-group">
+        <select id="preferredPositionCategory" name="preferredPositionCategory" onchange="showPreferredPositions(); validateField('preferredPositionCategory')">
+          <option value="">Select Position Category</option>
+          <option value="goalkeeper">Goalkeeper</option>
+          <option value="defender">Defender</option>
+          <option value="midfielder">Midfielder</option>
+          <option value="attacker">Attacker</option>
+        </select>
+        <span class="validation-indicator" id="preferredPositionCategory-indicator"></span>
+      </div>
       
       <div id="preferredPositionOptions" class="hidden">
         <label for="preferredPosition">Specific Position</label>
-        <select id="preferredPosition" name="preferredPosition">
-          <option value="">Select Position</option>
-        </select>
+        <div class="input-group">
+          <select id="preferredPosition" name="preferredPosition" onchange="validateField('preferredPosition')">
+            <option value="">Select Position</option>
+          </select>
+          <span class="validation-indicator" id="preferredPosition-indicator"></span>
+        </div>
       </div>
       
       <label for="otherPositionsDropdown">Other Positions (Optional - Multiple Selection)</label>
@@ -412,55 +505,68 @@
       </div>
       
       <label for="dominantFoot">Dominant Foot</label>
-      <select id="dominantFoot" name="dominantFoot">
-        <option value="">Select</option>
-        <option value="left">Left</option>
-        <option value="right">Right</option>
-        <option value="both">Both</option>
-      </select>
+      <div class="input-group">
+        <select id="dominantFoot" name="dominantFoot" onchange="validateField('dominantFoot')">
+          <option value="">Select</option>
+          <option value="left">Left</option>
+          <option value="right">Right</option>
+          <option value="both">Both</option>
+        </select>
+        <span class="validation-indicator" id="dominantFoot-indicator"></span>
+      </div>
       
       <label for="height">Height (cm)</label>
-      <input type="number" id="height" name="height" />
+      <div class="input-group">
+        <input type="number" id="height" name="height" onblur="validateField('height')" />
+        <span class="validation-indicator" id="height-indicator"></span>
+      </div>
       
       <label for="weight">Weight (kg)</label>
-      <input type="number" id="weight" name="weight" />
+      <div class="input-group">
+        <input type="number" id="weight" name="weight" onblur="validateField('weight')" />
+        <span class="validation-indicator" id="weight-indicator"></span>
+      </div>
       
       <label for="league">League</label>
-      <select id="league" name="league" onchange="handleLeagueChange()">
-        <option value="">Select League</option>
-        <option value="npfl">Nigerian Professional Football League</option>
-        <option value="nnl1">Nigerian National League One</option>
-        <option value="nnl2">Nigerian National League Two</option>
-        <option value="academy">Academy</option>
-        <option value="street">Street Clubs</option>
-        <option value="university">University</option>
-      </select>
+      <div class="input-group">
+        <select id="league" name="league" onchange="handleLeagueChange(); validateField('league')">
+          <option value="">Select League</option>
+          <option value="npfl">Nigerian Professional Football League</option>
+          <option value="nnl1">Nigerian National League One</option>
+          <option value="nnl2">Nigerian National League Two</option>
+          <option value="academy">Academy</option>
+          <option value="street">Street Clubs</option>
+          <option value="university">University</option>
+        </select>
+        <span class="validation-indicator" id="league-indicator"></span>
+      </div>
       
       <div id="leagueClubDropdown" class="hidden">
         <label for="leagueClub">Select Club/Team</label>
-        <select id="leagueClub" name="leagueClub">
-          <option value="">Select Club/Team</option>
-        </select>
+        <div class="input-group">
+          <select id="leagueClub" name="leagueClub" onchange="handleClubSelection('leagueClub'); validateField('leagueClub')">
+            <option value="">Select Club/Team</option>
+          </select>
+          <span class="validation-indicator" id="leagueClub-indicator"></span>
+        </div>
       </div>
       
       <div id="generalClubDropdown" class="hidden">
         <label for="generalClub">Select Club/Team</label>
-        <select id="generalClub" name="generalClub">
-          <option value="">Select Club/Team</option>
-        </select>
+        <div class="input-group">
+          <select id="generalClub" name="generalClub" onchange="handleClubSelection('generalClub'); validateField('generalClub')">
+            <option value="">Select Club/Team</option>
+          </select>
+          <span class="validation-indicator" id="generalClub-indicator"></span>
+        </div>
       </div>
       
-      <label for="clubAssociation">Club Association</label>
-      <select id="clubAssociation" name="clubAssociation" onchange="toggleClubDropdown()">
-        <option value="no">No</option>
-        <option value="yes">Yes</option>
-      </select>
-      
-      <div id="clubDropdown" class="hidden">
-        <label for="club">Select Club</label>
-        <select id="club" name="club">
-          <option value="">Select Club</option>
-        </select>
+      <div id="customClubField" class="hidden">
+        <label for="customClub">Enter Club/Team Name</label>
+        <div class="input-group">
+          <input type="text" id="customClub" name="customClub" placeholder="Enter club/team name" onblur="validateField('customClub')" />
+          <span class="validation-indicator" id="customClub-indicator"></span>
+        </div>
       </div>
     </fieldset>
 
@@ -476,7 +582,7 @@
       <div class="coming-soon">Coming Soon</div>
     </fieldset>
 
-    <button type="submit">Register</button>
+    <button type="submit">Submit</button>
   </form>
 </main>
 <footer>
@@ -588,13 +694,10 @@
     "Michael Okpara University FC", "University of Calabar FC", "Rivers State University FC"
   ];
 
-  // All clubs for club association dropdown
-  const allClubs = [
-    ...leagueClubs.npfl,
-    ...leagueClubs.nnl1,
-    ...leagueClubs.nnl2,
-    ...leagueClubs.academy,
-    ...generalClubs
+  // Simulated registered users database (in real implementation, this would be server-side)
+  const registeredUsers = [
+    { firstName: "John", lastName: "Doe", email: "john.doe@example.com" },
+    { firstName: "Jane", lastName: "Smith", email: "jane.smith@example.com" }
   ];
 
   function showMessage(message, isError = false) {
@@ -605,6 +708,158 @@
     }, 5000);
   }
 
+  function togglePassword(fieldId) {
+    const field = document.getElementById(fieldId);
+    const type = field.getAttribute('type') === 'password' ? 'text' : 'password';
+    field.setAttribute('type', type);
+  }
+
+  function validateField(fieldId) {
+    const field = document.getElementById(fieldId);
+    const indicator = document.getElementById(fieldId + '-indicator');
+    const value = field.value.trim();
+    
+    let isValid = false;
+    let errorMessage = '';
+
+    switch (fieldId) {
+      case 'firstName':
+      case 'lastName':
+        isValid = value.length >= 2;
+        if (!isValid) errorMessage = 'Name must be at least 2 characters';
+        if (isValid) {
+          // Check for duplicate user
+          const otherName = fieldId === 'firstName' ? 
+            document.getElementById('lastName').value.trim() :
+            document.getElementById('firstName').value.trim();
+          const email = document.getElementById('email').value.trim();
+          
+          if (otherName && checkDuplicateUser(
+            fieldId === 'firstName' ? value : otherName,
+            fieldId === 'lastName' ? value : otherName,
+            email
+          )) {
+            isValid = false;
+            errorMessage = 'User with this name already exists';
+          }
+        }
+        break;
+      
+      case 'email':
+        const emailPattern = /^[^@]+@[^@]+\.[^@]+$/;
+        isValid = emailPattern.test(value);
+        if (!isValid) errorMessage = 'Please enter a valid email address';
+        if (isValid) {
+          // Check for duplicate email
+          const firstName = document.getElementById('firstName').value.trim();
+          const lastName = document.getElementById('lastName').value.trim();
+          
+          if (checkDuplicateUser(firstName, lastName, value)) {
+            isValid = false;
+            errorMessage = 'User with this email already exists';
+          }
+        }
+        break;
+      
+      case 'password':
+        isValid = value.length >= 6;
+        if (!isValid) errorMessage = 'Password must be at least 6 characters';
+        // Also validate confirm password if it has a value
+        const confirmPassword = document.getElementById('confirmPassword');
+        if (confirmPassword.value) {
+          validateField('confirmPassword');
+        }
+        break;
+      
+      case 'confirmPassword':
+        const password = document.getElementById('password').value;
+        isValid = value === password && value.length > 0;
+        if (!isValid) errorMessage = 'Passwords do not match';
+        break;
+      
+      case 'dob':
+        isValid = value !== '';
+        if (!isValid) errorMessage = 'Date of birth is required';
+        break;
+      
+      case 'height':
+        const height = parseInt(value);
+        isValid = height >= 100 && height <= 250;
+        if (!isValid) errorMessage = 'Height must be between 100-250 cm';
+        break;
+      
+      case 'weight':
+        const weight = parseInt(value);
+        isValid = weight >= 30 && weight <= 200;
+        if (!isValid) errorMessage = 'Weight must be between 30-200 kg';
+        break;
+      
+      default:
+        isValid = value !== '';
+        if (!isValid) errorMessage = 'This field is required';
+        break;
+    }
+
+    if (indicator) {
+      if (isValid) {
+        indicator.innerHTML = '✓';
+        indicator.className = 'validation-indicator success';
+        indicator.title = '';
+      } else {
+        indicator.innerHTML = '●';
+        indicator.className = 'validation-indicator error';
+        indicator.title = errorMessage;
+      }
+    }
+
+    return isValid;
+  }
+
+  function checkDuplicateUser(firstName, lastName, email) {
+    return registeredUsers.some(user => 
+      (user.firstName.toLowerCase() === firstName.toLowerCase() && 
+       user.lastName.toLowerCase() === lastName.toLowerCase()) ||
+      user.email.toLowerCase() === email.toLowerCase()
+    );
+  }
+
+  function validatePhoto() {
+    const photoInput = document.getElementById('playerPhoto');
+    const indicator = document.getElementById('playerPhoto-indicator');
+    const preview = document.getElementById('photoPreview');
+    
+    if (photoInput.files.length > 0) {
+      const file = photoInput.files[0];
+      const maxSize = 200 * 1024; // 200KB in bytes
+      
+      if (file.size > maxSize) {
+        indicator.innerHTML = '●';
+        indicator.className = 'validation-indicator error';
+        indicator.title = 'Photo size must be 200KB or less';
+        preview.style.display = 'none';
+        return false;
+      } else {
+        indicator.innerHTML = '✓';
+        indicator.className = 'validation-indicator success';
+        indicator.title = '';
+        
+        // Show photo preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          preview.src = e.target.result;
+          preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+        return true;
+      }
+    } else {
+      indicator.innerHTML = '';
+      indicator.className = 'validation-indicator';
+      preview.style.display = 'none';
+      return false;
+    }
+  }
+
   // Initialize country dropdown
   function initializeCountries() {
     const nationalitySelect = document.getElementById('playerNationality');
@@ -613,17 +868,6 @@
       option.value = country.toLowerCase().replace(/\s+/g, '-');
       option.textContent = country;
       nationalitySelect.appendChild(option);
-    });
-  }
-
-  // Initialize club association dropdown
-  function initializeClubAssociation() {
-    const clubSelect = document.getElementById('club');
-    allClubs.forEach(club => {
-      const option = document.createElement('option');
-      option.value = club.toLowerCase().replace(/\s+/g, '-');
-      option.textContent = club;
-      clubSelect.appendChild(option);
     });
   }
 
@@ -688,6 +932,22 @@
     }
   });
 
+  // Handle club selection and show custom field if "Not Available" is selected
+  function handleClubSelection(selectId) {
+    const selectElement = document.getElementById(selectId);
+    const customClubField = document.getElementById('customClubField');
+    
+    if (selectElement.value === 'not-available') {
+      // Show custom club input field
+      customClubField.classList.remove('hidden');
+      document.getElementById('customClub').setAttribute('required', 'required');
+    } else {
+      // Hide custom club input field
+      customClubField.classList.add('hidden');
+      document.getElementById('customClub').removeAttribute('required');
+    }
+  }
+
   function displayFields() {
     const userType = document.getElementById('userType').value;
     document.querySelectorAll('.user-fields').forEach(field => field.classList.add('hidden'));
@@ -699,6 +959,7 @@
       document.getElementById('lastName').setAttribute('required', 'required');
       document.getElementById('email').setAttribute('required', 'required');
       document.getElementById('password').setAttribute('required', 'required');
+      document.getElementById('confirmPassword').setAttribute('required', 'required');
       document.getElementById('dob').setAttribute('required', 'required');
       document.getElementById('gender').setAttribute('required', 'required');
       document.getElementById('playerNationality').setAttribute('required', 'required');
@@ -708,7 +969,6 @@
       document.getElementById('height').setAttribute('required', 'required');
       document.getElementById('weight').setAttribute('required', 'required');
       document.getElementById('league').setAttribute('required', 'required');
-      document.getElementById('clubAssociation').setAttribute('required', 'required');
     } else if (userType === 'club') {
       document.getElementById('clubFields').classList.remove('hidden');
     } else if (userType === 'scout') {
@@ -722,17 +982,31 @@
     const generalClubDropdown = document.getElementById('generalClubDropdown');
     const leagueClubSelect = document.getElementById('leagueClub');
     const generalClubSelect = document.getElementById('generalClub');
-    const clubAssociation = document.getElementById('clubAssociation');
+    const dobField = document.getElementById('dobField');
+    const customClubField = document.getElementById('customClubField');
 
-    // Hide both dropdowns first
+    // Hide all club-related dropdowns first
     leagueClubDropdown.classList.add('hidden');
     generalClubDropdown.classList.add('hidden');
+    customClubField.classList.add('hidden');
     
     // Clear previous options and remove required attributes
     leagueClubSelect.innerHTML = '<option value="">Select Club/Team</option>';
     generalClubSelect.innerHTML = '<option value="">Select Club/Team</option>';
     leagueClubSelect.removeAttribute('required');
     generalClubSelect.removeAttribute('required');
+    document.getElementById('customClub').removeAttribute('required');
+
+    // Handle age field visibility based on league
+    if (league === 'street' || league === 'university' || league === 'nnl2') {
+      // Hide age field for these leagues
+      dobField.classList.add('hidden');
+      document.getElementById('dob').removeAttribute('required');
+    } else {
+      // Show age field for NPFL, NNL1, and Academy
+      dobField.classList.remove('hidden');
+      document.getElementById('dob').setAttribute('required', 'required');
+    }
 
     if (league === 'npfl' || league === 'nnl1' || league === 'nnl2' || league === 'academy') {
       // Show league-specific clubs
@@ -745,8 +1019,6 @@
         leagueClubSelect.appendChild(option);
       });
       
-      // Enable club association for these leagues
-      clubAssociation.disabled = false;
       leagueClubSelect.setAttribute('required', 'required');
     } else if (league === 'street' || league === 'university') {
       // Show general clubs dropdown
@@ -758,31 +1030,20 @@
         generalClubSelect.appendChild(option);
       });
       
-      // Disable club association for these leagues
-      clubAssociation.disabled = true;
-      clubAssociation.value = 'no';
-      document.getElementById('clubDropdown').classList.add('hidden');
+      // Add "Not Available" option for street and university
+      const notAvailableOption = document.createElement('option');
+      notAvailableOption.value = 'not-available';
+      notAvailableOption.textContent = 'Not Available';
+      generalClubSelect.appendChild(notAvailableOption);
+      
       generalClubSelect.setAttribute('required', 'required');
-    }
-  }
-
-  function toggleClubDropdown() {
-    const clubAssociation = document.getElementById('clubAssociation').value;
-    const clubDropdown = document.getElementById('clubDropdown');
-    const clubSelect = document.getElementById('club');
-    
-    if (clubAssociation === 'yes') {
-      clubDropdown.classList.remove('hidden');
-      clubSelect.setAttribute('required', 'required');
-    } else {
-      clubDropdown.classList.add('hidden');
-      clubSelect.removeAttribute('required');
     }
   }
 
   function validateAuthFields() {
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value.trim();
+    const confirmPassword = document.getElementById("confirmPassword").value.trim();
     const emailPattern = /^[^@]+@[^@]+\.[^@]+$/;
     
     if (!emailPattern.test(email)) {
@@ -793,6 +1054,10 @@
       showMessage("Password must be at least 6 characters long.", true);
       return false;
     }
+    if (password !== confirmPassword) {
+      showMessage("Passwords do not match.", true);
+      return false;
+    }
     return true;
   }
 
@@ -800,11 +1065,23 @@
     const photoInput = document.getElementById('playerPhoto');
     if (photoInput.files.length > 0) {
       const file = photoInput.files[0];
-      const maxSize = 20 * 1024; // 20KB in bytes
+      const maxSize = 200 * 1024; // 200KB in bytes
       if (file.size > maxSize) {
-        showMessage("Photo size must be 20KB or less.", true);
+        showMessage("Photo size must be 200KB or less.", true);
         return false;
       }
+    }
+    return true;
+  }
+
+  function checkForDuplicateRegistration() {
+    const firstName = document.getElementById('firstName').value.trim();
+    const lastName = document.getElementById('lastName').value.trim();
+    const email = document.getElementById('email').value.trim();
+    
+    if (checkDuplicateUser(firstName, lastName, email)) {
+      showMessage("A user with these credentials is already registered.", true);
+      return false;
     }
     return true;
   }
@@ -814,7 +1091,7 @@
     const userType = document.getElementById('userType').value;
     
     if (userType === 'player') {
-      if (!validateAuthFields() || !validatePhotoSize()) {
+      if (!validateAuthFields() || !validatePhotoSize() || !checkForDuplicateRegistration()) {
         e.preventDefault();
         return false;
       }
@@ -831,7 +1108,7 @@
   // Initialize dropdowns when page loads
   document.addEventListener('DOMContentLoaded', function() {
     initializeCountries();
-    initializeClubAssociation();
+    document.getElementById('year').textContent = new Date().getFullYear();
   });
 </script>
 </body>
